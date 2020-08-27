@@ -12,7 +12,7 @@ from tracking_utils.log import logger
 import dataloader as datasets
 import torch
 import cv2
-from tracker.multitrackercam9 import JDETracker
+from tracker.multitrackercam4 import JDETracker
 from tracking_utils.timer import Timer
 from tracking_utils import visualization as vis
 from PIL import Image
@@ -75,7 +75,7 @@ def eval_seq(opt, dataloader,polygon, paths, data_type, result_filename, frame_d
         # save results
         for track in out_of_polygon_tracklet:
             frame_idx,id,classes,movement=track
-            results.append((opt.video_name.split('/')[-1][:-4],frame_idx , classes, movement))
+            results.append((opt.input_video.split('/')[-1][:-4],frame_idx , classes, movement))
         if show_image or save_dir is not None:
             online_im = vis.plot_tracking(img0, online_tlwhs, online_ids, frame_id=frame_id,
                                           fps=1. / timer.average_time,out_track=out_of_polygon_tracklet)
