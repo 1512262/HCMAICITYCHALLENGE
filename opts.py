@@ -64,8 +64,8 @@ class opts(object):
                                   ' during validation.')
     # tracking
     #cam9
-    self.parser.add_argument('--conf_thres', type=float, default=0.1, help='confidence thresh for tracking') #cam9 0.1
-    self.parser.add_argument('--det_thres', type=float, default=0.1, help='confidence thresh for detection') #cam 9 0.1
+    self.parser.add_argument('--conf_thres', type=float, default=0.12, help='confidence thresh for tracking') #cam9 0.1
+    self.parser.add_argument('--det_thres', type=float, default=0.12, help='confidence thresh for detection') #cam 9 0.1
     self.parser.add_argument('--inference_batch_size', type=float, default=32, help='inference batch size')
     self.parser.add_argument('--nms_thres', type=float, default=0.5, help='iou thresh for nms')
     self.parser.add_argument('--track_buffer', type=int, default=15, help='tracking buffer') #cam9 15
