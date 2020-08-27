@@ -482,7 +482,13 @@ class JDETracker(object):
                 out_of_polygon_tracklet.append((frame_id,track.track_id,track_type,movement_id))
             else:
                 lost_stracks_copy.append(track)
+
         lost_stracks=lost_stracks_copy
+
+
+
+
+
 
 
 
