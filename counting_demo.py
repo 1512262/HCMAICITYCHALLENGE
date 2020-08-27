@@ -121,8 +121,4 @@ def demo(opt):
 
 if __name__ == '__main__':
     opt = opts().init()
-    save_path='/home/lam/Downloads/TrackingPseudoAtrribute'
-    if not os.path.exists(save_path+'/'+opt.input_video.split('/')[-1].split('.')[0]):
-        os.mkdir(save_path+'/'+opt.input_video.split('/')[-1].split('.')[0])
-    save_path=save_path+'/'+opt.input_video.split('/')[-1].split('.')[0]
     demo(opt)

@@ -12,6 +12,8 @@
 # point q lies on line segment 'pr' 
 import json
 import numpy as np
+from scipy.special import softmax
+import numpy as np
 
 def onSegment(p, q, r):
 	if (q[0] <= max(p[0], r[0]) and q[0] >= min(p[0], r[0]) and q[1] <= max(p[1], r[1]) and q[1] >= min(p[1], r[1])):
@@ -157,10 +159,38 @@ def point_to_line_distance(point,line):
 	p3=point
 	return abs(np.cross(p2-p1,p3-p1)/np.linalg.norm(p2-p1))
 def tlbrs_to_mean_area(tlbrs):
+<<<<<<< HEAD
 	areas=[np.abs((x[2]-x[0])*(x[3]-x[1])) for x in tlbrs]
 	return np.mean(areas)
+=======
+	whs=np.abs(np.asarray(tlbrs)[:,2]-np.asarray(tlbrs)[:,0],np.asarray(tlbrs)[:,3]-np.asarray(tlbrs)[:,1])
+	return np.mean(whs[0]*whs[1])
+
+
+def find_best_fit_line(points, paths):
+	movement_id = ''
+	movement_voting_list = [0]*len(paths.keys())
+	for i in range(len(points)-1):
+		direction_prob = []
+		for movement_label, movement_vector in paths.items():
+		
+			track_vector = (points[i], points[i+1])
+			cosin = cosin_similarity(track_vector, movement_vector)
+			direction_prob.append(cosin)
+		movement_temp_id = np.argmax(softmax(np.array(direction_prob)))
+		movement_voting_list[movement_temp_id] +=1
+	return np.argmax(np.array(movement_voting_list))
+>>>>>>> bd174bd51af77dbc7caecacf661b51d6c43dcda2
 	
+
+			
+
+
 if __name__=='__main__':
-	polygon1 = ((1, 5), (10, 0), (10, 10),(0, 10)) 
-	p=(1,2)
-	print(is_point_in_polygon(polygon1,p))
+	paths = {"Direction 1":[(2,3),(4,5)], "Direction 2": [(7,4), (6,2)]}
+	points = [(2,2), (3,2.5), (4,3), (4.5,5)]
+	print(find_best_fit_line(points, paths))
+	# polygon1 = ((1, 5), (10, 0), (10, 10),(0, 10)) 
+
+	# p=(1,2)
+	# print(is_point_in_polygon(polygon1,p))
