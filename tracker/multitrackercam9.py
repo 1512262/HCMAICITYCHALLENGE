@@ -22,7 +22,7 @@ from EfficientDet.backbone import EfficientDetBackbone
 from EfficientDet.efficientdet.utils import BBoxTransform, ClipBoxes
 from EfficientDet.utils.utils import preprocess, invert_affine, postprocess, STANDARD_COLORS, standard_to_bgr, get_index_label, plot_one_box
 import cv2
-from utils.bb_polygon import check_bbox_outside_polygon,counting_moi,point_to_line_distance
+from utils.bb_polygon import check_bbox_outside_polygon,counting_moi,point_to_line_distance,check_bbox_inside_polygon,check_bbox_intersect_or_outside_polygon
 
 class STrack(BaseTrack):
     shared_kalman = KalmanFilter()
@@ -260,7 +260,7 @@ class JDETracker(object):
             'laptop', 'mouse', 'remote', 'keyboard', 'cell phone', 'microwave', 'oven', 'toaster', 'sink',
             'refrigerator', '', 'book', 'clock', 'vase', 'scissors', 'teddy bear', 'hair drier',
             'toothbrush']
-        self.obj_interest=[ 'bicycle', 'motorcycle', 'bus', 'train', 'truck','car'] # ['person','bicycle', 'motorcycle', 'bus', 'train', 'truck','car'] 
+        self.obj_interest=[ 'person', 'bus', 'train', 'truck','car'] # ['person','bicycle', 'motorcycle', 'bus', 'train', 'truck','car'] 
 
         self.detetection_model= EfficientDetBackbone(compound_coef=opt.compound_coef, num_classes=len(self.obj_list),
                              ratios=anchor_ratios, scales=anchor_scales)
@@ -339,7 +339,7 @@ class JDETracker(object):
                         bbox.append([x1, y1, x2, y2])
                         score.append( float(out[0]['scores'][j]))
                         types.append(obj)
-                    elif obj in ['bicycle', 'motorcycle']: #['bicycle',  'motorcycle']
+                    elif obj in ['person']: #['bicycle',  'motorcycle']
                         bbox.append([x1, y1, x2, y2])
                         score.append( float(out[0]['scores'][j]))
                         types.append(obj)
@@ -368,7 +368,6 @@ class JDETracker(object):
             
         else:
             detections = []
-        print('len detection ' +str(len(detections)))
         
         detections_plot=detections.copy()
 
@@ -446,6 +445,8 @@ class JDETracker(object):
             #print('score :'+str(track.score))
             if track.score < self.det_thresh or track.occlusion_status==True or  check_bbox_outside_polygon(self.polygon,track.tlbr):
                 continue
+            if self.frame_id>=5 and track.infer_type() in ['person'] and not check_bbox_inside_polygon(self.polygon,track.tlbr):  #['bicycle',  'motorcycle']
+                continue
             track.activate(self.kalman_filter, self.frame_id)
             activated_starcks.append(track)
         """ Step 5: Update state and getting out of interest tracklet if have"""
@@ -465,6 +466,22 @@ class JDETracker(object):
                     refind_stracks_copy.append(track) if idx ==0 else activated_starcks_copy.append(track)
         refind_stracks=refind_stracks_copy
         activated_starcks=activated_starcks_copy
+
+        lost_stracks_copy=[]
+        if self.frame_id>=5:
+            for track in lost_stracks:
+                if check_bbox_intersect_or_outside_polygon(self.polygon,track.tlbr) and track.infer_type() in ['person'] : #['bicycle',  'motorcycle']
+                    track.mark_removed()
+                    removed_stracks.append(track)
+                    track_type=track.infer_type()
+                    movement_id=counting_moi(self.paths,[(track.track_trajectory[0],track.track_trajectory[-1])])[0]
+                    frame_id=self.frame_id+3
+                    if len(track.track_frames)>=4:
+                        out_of_polygon_tracklet.append((frame_id,track.track_id,track_type,movement_id))
+                else:
+                    lost_stracks_copy.append(track)
+            lost_stracks=lost_stracks_copy
+
         for track in self.lost_stracks:
             if self.frame_id - track.end_frame > self.max_time_lost :
                 track.mark_removed()
