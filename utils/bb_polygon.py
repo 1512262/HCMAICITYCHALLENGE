@@ -126,7 +126,7 @@ def check_bbox_inside_polygon(polygon, bbox):
 	return True
 def cosin_similarity(a2d, b2d):
 	a=np.array((a2d[1][0] - a2d[0][0], a2d[1][1]- a2d[0][1]))
-	b=np.array((b2d[1][0] - b2d[0][1], b2d[1][1] - b2d[1][0]))
+	b=np.array((b2d[1][0] - b2d[0][0], b2d[1][1] - b2d[0][1]))
 	return np.dot(a, b)/(np.linalg.norm(a)*np.linalg.norm(b))
 
 def load_zone_anno(json_filename):
@@ -157,8 +157,8 @@ def point_to_line_distance(point,line):
 	p3=point
 	return abs(np.cross(p2-p1,p3-p1)/np.linalg.norm(p2-p1))
 def tlbrs_to_mean_area(tlbrs):
-	whs=np.abs(np.asarray(tlbrs)[:,2]-np.asarray(tlbrs)[:,0],np.asarray(tlbrs)[:,3]-np.asarray(tlbrs)[:,1])
-	return np.mean(whs[0]*whs[1])
+	areas=[np.abs((x[2]-x[0])*(x[3]-x[1])) for x in tlbrs]
+	return np.mean(areas)
 	
 if __name__=='__main__':
 	polygon1 = ((1, 5), (10, 0), (10, 10),(0, 10)) 
