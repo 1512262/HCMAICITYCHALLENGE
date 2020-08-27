@@ -159,6 +159,10 @@ def point_to_line_distance(point,line):
 	p3=point
 	return abs(np.cross(p2-p1,p3-p1)/np.linalg.norm(p2-p1))
 def tlbrs_to_mean_area(tlbrs):
+<<<<<<< HEAD
+	areas=[np.abs((x[2]-x[0])*(x[3]-x[1])) for x in tlbrs]
+	return np.mean(areas)
+=======
 	whs=np.abs(np.asarray(tlbrs)[:,2]-np.asarray(tlbrs)[:,0],np.asarray(tlbrs)[:,3]-np.asarray(tlbrs)[:,1])
 	return np.mean(whs[0]*whs[1])
 
@@ -176,6 +180,7 @@ def find_best_fit_line(points, paths):
 		movement_temp_id = np.argmax(softmax(np.array(direction_prob)))
 		movement_voting_list[movement_temp_id] +=1
 	return np.argmax(np.array(movement_voting_list))
+>>>>>>> bd174bd51af77dbc7caecacf661b51d6c43dcda2
 	
 
 			

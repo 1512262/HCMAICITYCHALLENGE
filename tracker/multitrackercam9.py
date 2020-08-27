@@ -367,6 +367,7 @@ class JDETracker(object):
             
         else:
             detections = []
+        print('len detection ' +str(len(detections)))
         
         detections_plot=detections.copy()
 
@@ -459,7 +460,8 @@ class JDETracker(object):
                     removed_stracks.append(track)
                     if ((len(track.track_frames)>=2 and self.frame_id <=5) or len(track.track_frames)>=4) and idx==1:########## 4 is confident number of frame
                         track_type=track.infer_type()
-                        movement_id=counting_moi(self.paths,[(track.track_trajectory[0],track.track_trajectory[-1])])[0]
+                        track_center=[ [(x[0]+x[2])/2,(x[1]+x[3])/2] for x in track.track_trajectory]
+                        movement_id=counting_moi(self.paths,[(track_center[0],track_center[-1])])[0]
                         out_of_polygon_tracklet.append((self.frame_id,track.track_id,track_type,movement_id))
                 else:
                     refind_stracks_copy.append(track) if idx ==0 else activated_starcks_copy.append(track)
@@ -473,7 +475,8 @@ class JDETracker(object):
                     track.mark_removed()
                     removed_stracks.append(track)
                     track_type=track.infer_type()
-                    movement_id=counting_moi(self.paths,[(track.track_trajectory[0],track.track_trajectory[-1])])[0]
+                    track_center=[ [(x[0]+x[2])/2,(x[1]+x[3])/2] for x in track.track_trajectory]
+                    movement_id=counting_moi(self.paths,[(track_center[0],track_center[-1])])[0]
                     frame_id=self.frame_id+3
                     if len(track.track_frames)>=4:
                         out_of_polygon_tracklet.append((frame_id,track.track_id,track_type,movement_id))

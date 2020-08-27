@@ -78,9 +78,7 @@ def eval_seq(opt, dataloader,polygon, paths, data_type, result_filename, frame_d
         for track in out_of_polygon_tracklet:
             frame_idx,id,classes,movement=track
             results.append((opt.input_video.split('/')[-1][:-4],frame_idx , classes, movement))
-            
             f.write(','.join([opt.input_video.split('/')[-1][:-4], str(frame_idx), str(classes), str(movement)])+ '\n')
-        
         if show_image or save_dir is not None:
             online_im = vis.plot_tracking(img0, online_tlwhs, online_ids, frame_id=frame_id,
                                           fps=1. / timer.average_time,out_track=out_of_polygon_tracklet)
