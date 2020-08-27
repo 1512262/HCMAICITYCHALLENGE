@@ -31,6 +31,8 @@ def eval_seq(opt, dataloader,polygon, paths, data_type, result_filename, frame_d
     timer = Timer()
     results = []
     frame_id = 1
+    
+    f = open(opt.input_video.split('/')[-1][:-4] + '.txt', 'w' )
 
     for path, img, img0 in dataloader:
         img0_clone=copy.copy(img0)
@@ -75,7 +77,10 @@ def eval_seq(opt, dataloader,polygon, paths, data_type, result_filename, frame_d
         # save results
         for track in out_of_polygon_tracklet:
             frame_idx,id,classes,movement=track
-            results.append((opt.video_name.split('/')[-1][:-4],frame_idx , classes, movement))
+            results.append((opt.input_video.split('/')[-1][:-4],frame_idx , classes, movement))
+            
+            f.write(','.join([opt.input_video.split('/')[-1][:-4], str(frame_idx), str(classes), str(movement)])+ '\n')
+        
         if show_image or save_dir is not None:
             online_im = vis.plot_tracking(img0, online_tlwhs, online_ids, frame_id=frame_id,
                                           fps=1. / timer.average_time,out_track=out_of_polygon_tracklet)
@@ -96,6 +101,7 @@ def eval_seq(opt, dataloader,polygon, paths, data_type, result_filename, frame_d
 
         frame_id += 1
     # save results
+    
     return frame_id, timer.average_time, timer.calls
 
 def demo(opt):
