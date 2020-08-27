@@ -262,8 +262,8 @@ class JDETracker(object):
             'laptop', 'mouse', 'remote', 'keyboard', 'cell phone', 'microwave', 'oven', 'toaster', 'sink',
             'refrigerator', '', 'book', 'clock', 'vase', 'scissors', 'teddy bear', 'hair drier',
             'toothbrush']
-        self.obj_interest=[ 'bicycle', 'motorcycle', 'bus', 'train', 'truck','car'] # ['person','bicycle', 'motorcycle', 'bus', 'train', 'truck','car'] 
-
+        self.person_or_motorcycle=[ 'motorcycle','bicycle']
+        self.obj_interest=[ 'motorcycle','bicycle', 'bus', 'train', 'truck','car'] if self.person_or_motorcycle[0]!='person' else [ 'person', 'bus', 'train', 'truck','car']
         self.detetection_model= EfficientDetBackbone(compound_coef=opt.compound_coef, num_classes=len(self.obj_list),
                              ratios=anchor_ratios, scales=anchor_scales)
        
@@ -337,11 +337,11 @@ class JDETracker(object):
                 if obj in self.obj_interest:
                     x1, y1, x2, y2 = out[0]['rois'][j].astype(np.int)
                     #bike,bicycle
-                    if obj not in ['person','bicycle', 'motorcycle'] and float(out[0]['scores'][j])>=0.15:
+                    if obj not in self.person_or_motorcycle and float(out[0]['scores'][j])>=0.3:
                         bbox.append([x1, y1, x2, y2])
                         score.append( float(out[0]['scores'][j]))
                         types.append(obj)
-                    elif obj in ['bicycle', 'motorcycle']: #['bicycle',  'motorcycle']
+                    elif obj in self.person_or_motorcycle: #['bicycle',  'motorcycle']
                         bbox.append([x1, y1, x2, y2])
                         score.append( float(out[0]['scores'][j]))
                         types.append(obj)
@@ -370,7 +370,6 @@ class JDETracker(object):
             
         else:
             detections = []
-        print('len detection ' +str(len(detections)))
         
         detections_plot=detections.copy()
 
@@ -392,9 +391,9 @@ class JDETracker(object):
         STrack.multi_predict(strack_pool)
         #dists = matching.embedding_distance(strack_pool, detections)
         occlusion_map=heuristic_occlusion_detection(detections)
-        match_thres=70
+        match_thres=100
         dists=np.zeros(shape=(len(strack_pool),len(detections)))
-        dists = matching.gate_cost_matrix(self.kalman_filter, dists, strack_pool, detections,False)
+        dists = matching.gate_cost_matrix(self.kalman_filter, dists, strack_pool, detections,type_diff=True,occlusion_map=occlusion_map)
         #dists = matching.fuse_motion(self.opt,self.kalman_filter, dists, strack_pool, detections,lost_map=lost_map_tracks,occlusion_map=occlusion_map,thres=match_thres)
         matches, u_track, u_detection = matching.linear_assignment(dists, thresh=match_thres)
         
@@ -448,7 +447,7 @@ class JDETracker(object):
             #print('score :'+str(track.score))
             if track.score < self.det_thresh or track.occlusion_status==True or  check_bbox_outside_polygon(self.polygon,track.tlbr):
                 continue
-            if self.frame_id>=5 and track.infer_type() in ['bicycle', 'motorcycle'] and not check_bbox_inside_polygon(self.polygon,track.tlbr):
+            if self.frame_id>=5 and track.infer_type() in self.person_or_motorcycle and not check_bbox_inside_polygon(self.polygon,track.tlbr): #person, motorcycle
                 continue
             track.activate(self.kalman_filter, self.frame_id)
             activated_starcks.append(track)
@@ -458,28 +457,41 @@ class JDETracker(object):
         refind_stracks_copy=[]
         activated_starcks_copy=[]
         for idx,current_tracked_tracks in enumerate([refind_stracks,activated_starcks]) :#
+        
             for track in current_tracked_tracks:
                 if check_bbox_outside_polygon(self.polygon,track.tlbr) :
                     track.mark_removed()
                     removed_stracks.append(track)
                     if ((len(track.track_frames)>=2 and self.frame_id <=5) or len(track.track_frames)>=4) and idx==1:########## 4 is confident number of frame
-                        track_type=track.infer_type()
-                        movement_id=counting_moi(self.paths,[(track.track_trajectory[0],track.track_trajectory[-1])])[0]
-                        out_of_polygon_tracklet.append((self.frame_id,track.track_id,track_type,movement_id))
+                        if tlbrs_to_mean_area(track.track_trajectory) <=800 :
+                            track_type= self.person_or_motorcycle[0] #person
+                        else:
+                            track_type=track.infer_type()
+                        track_center=[ [(x[0]+x[2])/2,(x[1]+x[3])/2] for x in track.track_trajectory]
+                        movement_id=counting_moi(self.paths,[(track_center[0],track_center[-1])])[0]
+                        frame_id=self.frame_id+1 if movement_id=='1' else self.frame_id+2
+                        out_of_polygon_tracklet.append((frame_id,track.track_id,track_type,movement_id))
                 else:
                     refind_stracks_copy.append(track) if idx ==0 else activated_starcks_copy.append(track)
         refind_stracks=refind_stracks_copy
         activated_starcks=activated_starcks_copy
+        
+
         lost_stracks_copy=[]
         for track in lost_stracks:
             if check_bbox_intersect_or_outside_polygon(self.polygon,track.tlbr) :
                 track.mark_removed()
                 removed_stracks.append(track)
-                print(lost_stracks)
-                track_type=track.infer_type()
-                movement_id=counting_moi(self.paths,[(track.track_trajectory[0],track.track_trajectory[-1])])[0]
-                frame_id=self.frame_id+1 if str(movement_id)=='1' else self.frame_id
-                out_of_polygon_tracklet.append((frame_id,track.track_id,track_type,movement_id))
+                if ((len(track.track_frames)>=2 and self.frame_id <=5) or len(track.track_frames)>=4):
+                    # print(track.track_id,tlbrs_to_mean_area(track.track_trajectory))
+                    if tlbrs_to_mean_area(track.track_trajectory) <=800 :
+                        track_type= self.person_or_motorcycle[0]
+                    else:
+                        track_type=track.infer_type()
+                    track_center=[ [(x[0]+x[2])/2,(x[1]+x[3])/2] for x in track.track_trajectory]
+                    movement_id=counting_moi(self.paths,[(track_center[0],track_center[-1])])[0]
+                    frame_id=self.frame_id+3 if str(movement_id)=='2' else self.frame_id+3
+                    out_of_polygon_tracklet.append((frame_id,track.track_id,track_type,movement_id))
             else:
                 lost_stracks_copy.append(track)
 
@@ -505,7 +517,7 @@ class JDETracker(object):
                     removed_stracks.append(track)
        
         # print('Ramained match {} s'.format(t4-t3))
-        print(out_of_polygon_tracklet)
+        # print(out_of_polygon_tracklet)
         self.tracked_stracks = [t for t in self.tracked_stracks if t.state == TrackState.Tracked]
         self.tracked_stracks,_ = joint_stracks(self.tracked_stracks, activated_starcks)
         self.tracked_stracks,_ = joint_stracks(self.tracked_stracks, refind_stracks)
