@@ -261,8 +261,9 @@ class JDETracker(object):
             'laptop', 'mouse', 'remote', 'keyboard', 'cell phone', 'microwave', 'oven', 'toaster', 'sink',
             'refrigerator', '', 'book', 'clock', 'vase', 'scissors', 'teddy bear', 'hair drier',
             'toothbrush']
-        self.person_or_motorcycle=[ 'motorcycle','bicycle']
+        self.person_or_motorcycle=['person']
         self.obj_interest=[ 'motorcycle','bicycle', 'bus', 'train', 'truck','car'] if self.person_or_motorcycle[0]!='person' else [ 'person', 'bus', 'train', 'truck','car']
+        print(self.obj_interest)
         self.detetection_model= EfficientDetBackbone(compound_coef=opt.compound_coef, num_classes=len(self.obj_list),
                              ratios=anchor_ratios, scales=anchor_scales)
        
@@ -336,6 +337,8 @@ class JDETracker(object):
                 if obj in self.obj_interest:
                     x1, y1, x2, y2 = out[0]['rois'][j].astype(np.int)
                     #bike,bicycle
+                    if (y1+y2)/2>height/2 and float(out[0]['scores'][j])<0.35:
+                        continue
                     if obj not in self.person_or_motorcycle and float(out[0]['scores'][j])>=0.3:
                         bbox.append([x1, y1, x2, y2])
                         score.append( float(out[0]['scores'][j]))
@@ -390,9 +393,9 @@ class JDETracker(object):
         STrack.multi_predict(strack_pool)
         #dists = matching.embedding_distance(strack_pool, detections)
         occlusion_map=heuristic_occlusion_detection(detections)
-        match_thres=100
+        match_thres=850
         dists=np.zeros(shape=(len(strack_pool),len(detections)))
-        dists = matching.gate_cost_matrix(self.kalman_filter, dists, strack_pool, detections,type_diff=True,occlusion_map=occlusion_map)
+        dists = matching.gate_cost_matrix(self.kalman_filter, dists, strack_pool, detections,type_diff=True)
         #dists = matching.fuse_motion(self.opt,self.kalman_filter, dists, strack_pool, detections,lost_map=lost_map_tracks,occlusion_map=occlusion_map,thres=match_thres)
         matches, u_track, u_detection = matching.linear_assignment(dists, thresh=match_thres)
         
@@ -598,7 +601,7 @@ class JDETracker(object):
         self.lost_stracks=new_lost_tracks
 
 
-def heuristic_occlusion_detection(detections,thres=0.6):
+def heuristic_occlusion_detection(detections,thres=0.8):
     detection_tlbrscores=  [np.append(detection.tlbr,[detection.score]) for detection in detections] 
     detection_tlbrscores=  np.asarray(detection_tlbrscores)
     occ_status=[]
@@ -614,7 +617,7 @@ def heuristic_occlusion_detection(detections,thres=0.6):
 
         delta_scores=np.asarray(detection_tlbrscores[:,4]-detection_tlbrscore[4])
         num_invalid= len( np.where(np.logical_and(box_ious>thres, delta_scores >=-0.05))[0])
-        num_invalid_thres2=len(np.where(box_ious>0.75)[0])
+        num_invalid_thres2=len(np.where(box_ious>0.85)[0])
 
         detections[idx].iou_box=np.sort(box_ious)[-2] if len(box_ious)>1 else None
         occ_iou.append(detections[idx].iou_box)
