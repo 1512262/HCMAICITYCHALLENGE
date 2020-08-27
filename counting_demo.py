@@ -20,6 +20,7 @@ from utils.bb_polygon import load_zone_anno
 import numpy as np
 import copy
 def eval_seq(opt, dataloader,polygon, paths, data_type, result_filename, frame_dir=None,save_dir=None,bbox_dir=None, show_image=True, frame_rate=30):
+    count=0
     if save_dir:
         mkdir_if_missing(save_dir)
     if bbox_dir:
@@ -33,7 +34,6 @@ def eval_seq(opt, dataloader,polygon, paths, data_type, result_filename, frame_d
 
     for path, img, img0 in dataloader:
         img0_clone=copy.copy(img0)
-        print(img0.shape)
         if frame_id % 1 == 0:
             logger.info('Processing frame {} ({:.2f} fps)'.format(frame_id, 1. / max(1e-5, timer.average_time)))
            
@@ -42,6 +42,11 @@ def eval_seq(opt, dataloader,polygon, paths, data_type, result_filename, frame_d
         timer.tic()
         blob = torch.from_numpy(img).cuda().unsqueeze(0) if opt.gpus[0]>=0 else torch.from_numpy(img).cpu().unsqueeze(0)
         online_targets,detection_boxes,out_of_polygon_tracklet = tracker.update(blob, img0)
+        if len(out_of_polygon_tracklet)>0:
+            for track in np.asarray(out_of_polygon_tracklet)[:,2]:
+                if track in ['person','bicycle', 'motorcycle']:
+                    count+=1
+            print('count : '+str(count))
         online_tlwhs = []
         online_ids = []
         
@@ -68,7 +73,9 @@ def eval_seq(opt, dataloader,polygon, paths, data_type, result_filename, frame_d
 
         timer.toc()
         # save results
-        results.append((frame_id + 1, online_tlwhs, online_ids))
+        for track in out_of_polygon_tracklet:
+            frame_idx,id,classes,movement=track
+            results.append((opt.video_name.split('/')[-1][:-4],frame_idx , classes, movement))
         if show_image or save_dir is not None:
             online_im = vis.plot_tracking(img0, online_tlwhs, online_ids, frame_id=frame_id,
                                           fps=1. / timer.average_time,out_track=out_of_polygon_tracklet)
