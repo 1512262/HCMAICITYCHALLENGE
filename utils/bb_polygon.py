@@ -114,7 +114,7 @@ def check_bbox_intersect_or_outside_polygon(polygon, bbox):
  
 def check_bbox_outside_polygon(polygon, bbox):
 	x1, y1, x2, y2 = bbox
-	bb = [(x1,y1), (x2, y1), (x2,y2), (x1,y2)]
+	bb = [(x1,y1), (x2, y1), (x2,y2), (x1,y2), ((x1+x2)/2,(y1+y2)/2) , ((x1+x2)/2,(0.7*y1+0.3*y2)), ((x1+x2)/2,(0.3*y1+0.7*y2)) ]
 	for i in range(len(bb)):
 		if is_point_in_polygon(polygon, bb[i]):
 			return False
@@ -159,14 +159,11 @@ def point_to_line_distance(point,line):
 	p3=point
 	return abs(np.cross(p2-p1,p3-p1)/np.linalg.norm(p2-p1))
 def tlbrs_to_mean_area(tlbrs):
-<<<<<<< HEAD
 	areas=[np.abs((x[2]-x[0])*(x[3]-x[1])) for x in tlbrs]
 	return np.mean(areas)
-=======
-	whs=np.abs(np.asarray(tlbrs)[:,2]-np.asarray(tlbrs)[:,0],np.asarray(tlbrs)[:,3]-np.asarray(tlbrs)[:,1])
-	return np.mean(whs[0]*whs[1])
+	
 
-
+			
 def find_best_fit_line(points, paths):
 	movement_id = ''
 	movement_voting_list = [0]*len(paths.keys())
@@ -180,12 +177,32 @@ def find_best_fit_line(points, paths):
 		movement_temp_id = np.argmax(softmax(np.array(direction_prob)))
 		movement_voting_list[movement_temp_id] +=1
 	return np.argmax(np.array(movement_voting_list))
->>>>>>> bd174bd51af77dbc7caecacf661b51d6c43dcda2
-	
+def lineFromPoints(P,Q): 
+	a = Q[1] - P[1] 
+	b = P[0] - Q[0]  
+	c = a*(P[0]) + b*(P[1])
+	return a,b,c
 
-			
-
-
+#l,on, r:0,1,2
+def point_line_relative(point,line):
+	a,b,c=lineFromPoints(line[0],line[1])
+	x,y=point
+	direction=a*x+b*y+c
+	relative_pos = 0 if direction<0 else 1 if direction==0 else 2
+#t,l,b,r bbox
+def box_line_relative(box,line): 
+	t,l,b,r=box
+	p1,p2,p3,p4=(t,l),(b,l),(t,r),(b,r)
+	rela1,rela2,rela3,rela4=point_line_relative(p1,line),point_line_relative(p2,line),point_line_relative(p3,line),point_line_relative(p4,line)
+	bottom_num=0
+	up_num=0
+	for rela in[rela1,rela2,rela3,rela4]:
+		if rela==0:
+			bottom_num+=1
+		if rela==2:
+			up_num+=1
+	pos= 'up' if bottom_num==0 else 'bottom' if up_num==0 else 'cross'
+	return pos
 if __name__=='__main__':
 	paths = {"Direction 1":[(2,3),(4,5)], "Direction 2": [(7,4), (6,2)]}
 	points = [(2,2), (3,2.5), (4,3), (4.5,5)]
