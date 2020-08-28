@@ -118,17 +118,19 @@ def gate_cost_matrix(kf, cost_matrix, tracks, detections, only_position=False,ty
     if cost_matrix.size == 0:
         return cost_matrix
     gating_dim = 2 if only_position else 4
-    gating_threshold = kalman_filter.chi2inv95[gating_dim]*7 #cam9: 7
+    gating_threshold = kalman_filter.chi2inv95[gating_dim]*1000 #cam9: 7
     measurements = np.asarray([det.to_xyah() for det in detections])
     for row, track in enumerate(tracks):
         gating_distance = kf.gating_distance(
             track.mean, track.covariance, measurements, only_position)
         cost_matrix[row]=gating_distance
         cost_matrix[row, gating_distance > gating_threshold] = np.inf
+        if track.track_id==2:
+            print(cost_matrix[row])
     if type_diff:
         for i in range(len(cost_matrix)):
             for j in range(len(cost_matrix[i])):
-                if track[i].vehicle_type!='Undetermine' and track[i].vehicle_type!=detections[j].infer_type():
+                if tracks[i].vehicle_type!='Undetermine' and tracks[i].vehicle_type!=detections[j].infer_type():
                     cost_matrix[i][j]=np.inf
     return cost_matrix
 
