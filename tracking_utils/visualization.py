@@ -1,5 +1,6 @@
 import numpy as np
 from cv2 import cv2
+import random
 
 def tlwhs_to_tlbrs(tlwhs):
     tlbrs = np.copy(tlwhs)
@@ -48,14 +49,14 @@ def plot_tracking(image, tlwhs, obj_ids, scores=None, frame_id=0, fps=0., ids2=N
         _line_thickness = 1 if obj_id <= 0 else line_thickness
         color = get_color(abs(obj_id))
         cv2.rectangle(im, intbox[0:2], intbox[2:4], color=color, thickness=line_thickness)
-        cv2.putText(im, id_text, (intbox[0], intbox[1] + 30), cv2.FONT_HERSHEY_PLAIN, text_scale, (0, 0, 255),
-                    thickness=text_thickness)
+        cv2.putText(im, id_text, (intbox[0], intbox[1] + 30), cv2.FONT_HERSHEY_PLAIN, text_scale, (255, 0, 0),
+                    thickness=line_thickness)
     space=30
     counting_width=300
     for idx,track in enumerate(out_track):
         frame_id,id,classes,movement=track
-        cv2.putText(im, str(id)+' '+str(classes)+' '+str(movement), (im_w-counting_width, (idx+1)*space), cv2.FONT_HERSHEY_PLAIN, text_scale, (0, 0, 0),
-                    thickness=text_thickness)
+        cv2.putText(im, str(id)+' '+str(classes)+' '+str(movement), (im_w-counting_width, (idx+1)*space), cv2.FONT_HERSHEY_PLAIN, text_scale, (random.randint(0,255), random.randint(0,255), random.randint(0,255)),
+                    thickness=3)
 
     return im
 
@@ -71,7 +72,7 @@ def plot_trajectory(image, tlwhs, track_ids):
     return image
 
 
-def plot_detections(image, tlbrs, scores=None, color=(255, 0, 0), ids=None,box_occlusion=None):
+def plot_detections(image, tlbrs, scores=None, color=(255, 0, 0), ids=None,box_occlusion=None,btypes=None):
     im = np.copy(image)
     text_scale = max(1, image.shape[1] / 1200)
     thickness = 2 if text_scale > 1.3 else 1
@@ -94,6 +95,11 @@ def plot_detections(image, tlbrs, scores=None, color=(255, 0, 0), ids=None,box_o
             text = box_occlusion[i]
             cv2.putText(im, text, (x1, y1 + 50), cv2.FONT_HERSHEY_PLAIN,1, (0, 255, 255),
                         thickness=thickness)
+        if btypes is not None:
+            text=btypes[i]
+            cv2.putText(im, text, (x1, y1 + 70), cv2.FONT_HERSHEY_PLAIN,1, (0, 255, 255),
+                        thickness=thickness)
+
 
 
 

@@ -12,7 +12,7 @@ from tracking_utils.log import logger
 import dataloader as datasets
 import torch
 import cv2
-from tracker.multitrackercam9 import JDETracker
+from tracker.multitrackercam4 import JDETracker
 from tracking_utils.timer import Timer
 from tracking_utils import visualization as vis
 from PIL import Image
@@ -62,6 +62,7 @@ def eval_seq(opt, dataloader,polygon, paths, data_type, result_filename, frame_d
         #bbox detection plot        
         box_tlbrs=[]
         box_scores=[]
+        box_classes=[]
         box_occlusions=[]
         img_bbox=img0.copy()
         for box in detection_boxes:
@@ -71,6 +72,7 @@ def eval_seq(opt, dataloader,polygon, paths, data_type, result_filename, frame_d
             if tlwh[2] * tlwh[3] > opt.min_box_area:
                 box_tlbrs.append(tlbr)
                 box_scores.append(box.score)
+                box_classes.append(box.infer_type())
                 box_occlusions.append('occ' if box.occlusion_status==True else 'non_occ')
 
         timer.toc()
@@ -82,7 +84,7 @@ def eval_seq(opt, dataloader,polygon, paths, data_type, result_filename, frame_d
         if show_image or save_dir is not None:
             online_im = vis.plot_tracking(img0, online_tlwhs, online_ids, frame_id=frame_id,
                                           fps=1. / timer.average_time,out_track=out_of_polygon_tracklet)
-            bbox_im=vis.plot_detections(img_bbox,box_tlbrs,scores=box_scores,box_occlusion=None)
+            bbox_im=vis.plot_detections(img_bbox,box_tlbrs,scores=box_scores,box_occlusion=None,btypes=box_classes)
         if show_image:
             cv2.polylines(online_im,[np.asarray(polygon)],True,(0,255,255))
             cv2.polylines(bbox_im,[np.asarray(polygon)],True,(0,255,255))

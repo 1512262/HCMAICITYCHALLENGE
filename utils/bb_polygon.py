@@ -164,7 +164,7 @@ def tlbrs_to_mean_area(tlbrs):
 	
 
 			
-def find_best_fit_line(points, paths):
+def find_best_fit_line(paths, points):
 	movement_id = ''
 	movement_voting_list = [0]*len(paths.keys())
 	for i in range(len(points)-1):
@@ -176,7 +176,27 @@ def find_best_fit_line(points, paths):
 			direction_prob.append(cosin)
 		movement_temp_id = np.argmax(softmax(np.array(direction_prob)))
 		movement_voting_list[movement_temp_id] +=1
-	return np.argmax(np.array(movement_voting_list))
+	return np.argmax(np.array(movement_voting_list)) + 1
+def find_best_fit_line1(paths, points):
+	X = [p[0] for p in points]
+	Y = [p[1] for p in points]
+	z = np.polyfit(X, Y, 1)
+	x0 = X[0]
+	y0 = z[0]*x0 + z[1]
+	x1 = X[-1]
+	y1 = z[0]*x1 + z[1]
+	track_vector = [(x0,y0), (x1, y1)]
+	cosine_array = []
+	for movement_label, movement_vector in paths.items():
+		cosin = cosin_similarity(track_vector, movement_vector)
+
+		cosine_array.append(cosin)
+	movement_id = np.argmax(np.array(cosine_array)) + 1
+	return movement_id
+	
+		
+
+
 def lineFromPoints(P,Q): 
 	a = Q[1] - P[1] 
 	b = P[0] - Q[0]  
@@ -206,7 +226,8 @@ def box_line_relative(box,line):
 if __name__=='__main__':
 	paths = {"Direction 1":[(2,3),(4,5)], "Direction 2": [(7,4), (6,2)]}
 	points = [(2,2), (3,2.5), (4,3), (4.5,5)]
-	print(find_best_fit_line(points, paths))
+	print(find_best_fit_line(paths, points))
+	print(find_best_fit_line1(paths, points))
 	# polygon1 = ((1, 5), (10, 0), (10, 10),(0, 10)) 
 
 	# p=(1,2)
